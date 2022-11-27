@@ -34,6 +34,8 @@ class Puppy:
 
     # These constants are for the eyes.
     NEUTRAL_EYES = Image(ImageFile.NEUTRAL)
+    PINCHED_LEFT = Image(ImageFile.PINCHED_LEFT)
+    PINCHED_RIGHT = Image(ImageFile.PINCHED_RIGHT)
     TIRED_EYES = Image(ImageFile.TIRED_MIDDLE)
     TIRED_LEFT_EYES = Image(ImageFile.TIRED_LEFT)
     TIRED_RIGHT_EYES = Image(ImageFile.TIRED_RIGHT)
@@ -144,23 +146,27 @@ class Puppy:
         return True
     '''以下是事件部分'''
     def boneAte(self):
-        if self.color() != None:
+        if self.color_sensor.color() != None:
+            # print(self.color_sensor.color())
             return True
         else:
             return False
     
     def isTouched(self):
-        return self.touch_A.pressed()
+        touched=self.touch_A.pressed()
+        return touched
     
     def faceExpression(self, condition):
         self.eyes = self.condition
     
     def soundEffect(self, effect):
+        ### speaker.set_volume(volumn, which='_all')
         self.ev3.speaker.play_file(SoundFile.effect)
         
     '''以下是狀態部分'''
     def reset(self):
         # Set initial behavior.
+        # self.move_head(20)
         self.behavior = self.idle
 
     # def idle(self):
@@ -176,29 +182,45 @@ class Puppy:
     Idle
     30s內偵測到拍背
     '''
-    def idle(self, value):
+    def idle(self):
         print('idle')
         self.eyes = self.NEUTRAL_EYES
         # self.faceExpression(MIDDLE_RIGHT)
         # self.faceExpression(MIDDLE_LEFT)
-        self.ev3.speaker.play_file(DOG_SNIFF)        
+        self.ev3.speaker.play_file(SoundFile.DOG_SNIFF)        
         #如果在等待時間不超過三十秒
-        while self.waitOver(value) == False:
-            #如果被摸到
-            if self.isTouched == True:
-                self.behavior = self.wandering()
+        print(self.isTouched())
+        if self.isTouched() == True:
+            self.count_changed_timer.reset()
+            self.behavior = self.wandering()
+            self.count_changed_timer.reset()
+        # while self.waitOver(value) == False:
+        if self.count_changed_timer.time() > 30000:
+                print('boring~')
     '''
     wandering
     30s內吃到骨頭
     經過30s沒有吃到骨頭
     '''
     def wandering(self):
-        self.faceExpression(PINCHED_LEFT)
-        self.faceExpression(PINCHED_RIGHT)
-        self.faceExpression(PINCHED_MIDDLE)
-        self.soundEffect(DOG_BARK_1)
-        if self.waitOver(30000) == True:
-            self.behavior = self.idle
+        print('wandering')
+        if self.count_changed_timer.time() < 30000:
+
+            self.eyes = self.PINCHED_LEFT
+            self.eyes = self.PINCHED_RIGHT
+            self.ev3.speaker.play_file(SoundFile.DOG_BARK_1)
+            # self.faceExpression(PINCHED_LEFT)
+            # self.faceExpression(PINCHED_RIGHT)
+            # self.faceExpression(PINCHED_MIDDLE)
+            # self.soundEffect(DOG_BARK_1)
+            if self.boneAte() and self.boneAte()== True:
+                self.count_changed_timer.reset()
+                self.behavior = self.happy()
+        else :
+            # self.count_changed_timer.time() > 30000:
+            # self.count_changed_timer.reset()
+            self.behavior = self.sad()
+        
                 
     '''
     sleep
@@ -241,41 +263,50 @@ class Puppy:
     受到攻擊
     '''
     def sad(self):
-        self.soundEffect(self, CRYING)
-        self.faceExpression(self, TIRED_LEFT)
-        self.soundEffect(self, CRYING)
-        self.faceExpression(self, TIRED_Middle)
-        self.soundEffect(self, CRYING)
-        self.faceExpression(self, TIRED_Right)
-        self.soundEffect(self, CRYING)
+        print('sad')
+        # self.soundEffect(self, CRYING)
+        # self.faceExpression(self, TIRED_LEFT)
+        # self.soundEffect(self, CRYING)
+        # self.faceExpression(self, TIRED_Middle)
+        # self.soundEffect(self, CRYING)
+        # self.faceExpression(self, TIRED_Right)
+        # self.soundEffect(self, CRYING)
     
     '''
     happy
     完成動作後: 3s後
     '''
     def happy(self):
-        self.soundEffect(self, DOG_BARK_1)
-        self.faceExpression(self, WINKING)
-        self.soundEffect(self, DOG_BARK_1)
-        self.faceExpression(self, NEUTRAL)
-        self.soundEffect(self, DOG_BARK_1)
-        self.faceExpression(self, CRAZY_1)
-        self.soundEffect(self, DOG_BARK_1)
-        self.faceExpression(self, CRAZY_2)                        
-    
+        print('happy')
+        # self.soundEffect(self, DOG_BARK_1)
+        # self.faceExpression(self, WINKING)
+        # self.soundEffect(self, DOG_BARK_1)
+        # self.faceExpression(self, NEUTRAL)
+        # self.soundEffect(self, DOG_BARK_1)
+        # self.faceExpression(self, CRAZY_1)
+        # self.soundEffect(self, DOG_BARK_1)
+        # self.faceExpression(self, CRAZY_2)                        
+
+        '''goto 跟隨
+        '''
+        #偵測到拍背
+        if self.isTouched() == True:
+            self.count_changed_timer.reset()
+            self.behavior=self.idle()
+
 
     def go_to_sleep(self):
         """Makes the puppy go to sleep."""
         if self.did_behavior_change:
             print('go_to_sleep')
             self.eyes = self.TIRED_EYES
-            self.sit_down()
+            # self.sit_down()
             self.move_head(self.HEAD_DOWN_ANGLE)
             self.eyes = self.SLEEPING_EYES
             self.ev3.speaker.play_file(SoundFile.SNORING)
-        if self.touch_sensor.pressed() and Button.CENTER in self.ev3.buttons.pressed():
+        if self.touch_A.pressed() and Button.CENTER in self.ev3.buttons.pressed():
             self.count_changed_timer.reset()
-            self.behavior = self.wake_up
+            self.behavior = self.idle
 
     def wake_up(self):
         """Makes the puppy wake up."""
@@ -330,7 +361,7 @@ class Puppy:
             self.ev3.speaker.play_file(SoundFile.DOG_BARK_1)
             self.hop()
         wait(500)
-        self
+        
 
 
     @property
@@ -354,11 +385,19 @@ class Puppy:
             return True
         return False
 
+    def monitor_counts(self):
+        if self.count_changed_timer.time() > 30000:
+            # If nothing has happened for 30 seconds, go to sleep
+            self.count_changed_timer.reset()
+            self.behavior = self.idle()
+
     def run(self):
-        self.idle(value=30000)
+        self.reset()
         while True:
+            self.monitor_counts()
             self.behavior()
             wait(100)
+            
 
 if __name__ == '__main__':
     puppy = Puppy()
