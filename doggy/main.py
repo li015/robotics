@@ -14,11 +14,11 @@ https://education.lego.com/en-us/support/mindstorms-ev3/building-instructions#bu
 import urandom
 
 from pybricks.hubs import EV3Brick
-from pybricks.ev3devices import Motor, ColorSensor, TouchSensor
+from pybricks.ev3devices import Motor, ColorSensor, TouchSensor, GyroSensor, UltrasonicSensor
 from pybricks.parameters import Port, Button, Color, Direction
 from pybricks.media.ev3dev import Image, ImageFile, SoundFile
 from pybricks.tools import wait, StopWatch
-from threading import Timer
+from pybricks.robotics import DriveBase
 
 
 
@@ -62,7 +62,7 @@ class Puppy:
         self.d_1 = UltrasonicSensor(Port.S1)
 
         # 如果有的話多加一顆超音波感測器;
-        self.d_2 = UltrasonicSensor(Port.S3)
+        # self.d_2 = UltrasonicSensor(Port.S3)
 
         # 初始化車輛基座 ; Initialize the drive base.
         # 有關 DriveBase的使用: https://pybricks.com/ev3-micropython/robotics.html
@@ -77,11 +77,11 @@ class Puppy:
 
         # Initialize the Color Sensor. It is used to detect the colors when
         # feeding the puppy.
-        self.color_sensor = ColorSensor(Port.S4)
+        self.color_sensor = ColorSensor(Port.S3)
 
-        # Initialize the touch sensor. It is used to detect when someone pets
-        # the puppy.
-        self.touch_sensor = TouchSensor(Port.S1)
+        # # Initialize the touch sensor. It is used to detect when someone pets
+        # # the puppy.
+        # self.touch_sensor = TouchSensor(Port.S1)
 
         self.pet_count_timer = StopWatch()
         self.feed_count_timer = StopWatch()
@@ -159,52 +159,53 @@ class Puppy:
         self.ev3.speaker.play_file(SoundFile.effect)
         
     '''以下是狀態部分'''
-    
-    def idle(self):
-        """The puppy is idle and waiting for someone to pet it or feed it."""
-        if self.did_behavior_change:
-            print('idle')
-            self.stand_up()
-        self.update_eyes()
-        self.update_behavior()
-        self.update_pet_count()
-        self.update_feed_count()
+    def reset(self):
+        # Set initial behavior.
+        self.behavior = self.idle
+
+    # def idle(self):
+    #     """The puppy is idle and waiting for someone to pet it or feed it."""
+    #     if self.did_behavior_change:
+    #         print('idle')
+    #         self.stand_up()
+    #     self.update_eyes()
+    #     self.update_behavior()
+    #     self.update_pet_count()
+    #     self.update_feed_count()
     '''
     Idle
     30s內偵測到拍背
     '''
-    def idle1(self, value):
+    def idle(self, value):
         print('idle')
-        self.faceExpression(Neutral)
-        self.faceExpression(MIDDLE_RIGHT)
-        self.faceExpression(MIDDLE_LEFT)
-                
+        self.eyes = self.NEUTRAL_EYES
+        # self.faceExpression(MIDDLE_RIGHT)
+        # self.faceExpression(MIDDLE_LEFT)
+        self.ev3.speaker.play_file(DOG_SNIFF)        
         #如果在等待時間不超過三十秒
-        while self.waitOver(self, value) == False:
+        while self.waitOver(value) == False:
             #如果被摸到
             if self.isTouched == True:
-                self.wandering()
-
-        self.asleep()
-    
+                self.behavior = self.wandering()
     '''
     wandering
     30s內吃到骨頭
     經過30s沒有吃到骨頭
     '''
     def wandering(self):
-        while self.waitOver(self, value) == False:
-            if boneAte(self) == True:
-                self.happy(self)
-        if boneAte(self) == False:
-            self.sad(self)
+        self.faceExpression(PINCHED_LEFT)
+        self.faceExpression(PINCHED_RIGHT)
+        self.faceExpression(PINCHED_MIDDLE)
+        self.soundEffect(DOG_BARK_1)
+        if self.waitOver(30000) == True:
+            self.behavior = self.idle
                 
     '''
     sleep
     偵測到拍背
     受到攻擊
     '''
-    def asleep(self):
+    # def asleep(self):
         
         
     
@@ -352,3 +353,13 @@ class Puppy:
             self._behavior_changed = False
             return True
         return False
+
+    def run(self):
+        self.idle(value=30000)
+        while True:
+            self.behavior()
+            wait(100)
+
+if __name__ == '__main__':
+    puppy = Puppy()
+    puppy.run()
