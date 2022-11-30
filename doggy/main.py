@@ -21,7 +21,6 @@ from pybricks.tools import wait, StopWatch
 from pybricks.robotics import DriveBase
 
 
-
 class Puppy:
     # These constants are used for positioning the legs.
     HALF_UP_ANGLE = 25
@@ -63,9 +62,6 @@ class Puppy:
         self.touch_A = TouchSensor(Port.S4)
         self.d_1 = UltrasonicSensor(Port.S1)
 
-        # 如果有的話多加一顆超音波感測器;
-        # self.d_2 = UltrasonicSensor(Port.S3)
-
         # 初始化車輛基座 ; Initialize the drive base.
         # 有關 DriveBase的使用: https://pybricks.com/ev3-micropython/robotics.html
         # turn/straight 的輸入參數目前為相反值 ; for now, the input value of turn/stright are the opposites.
@@ -83,7 +79,6 @@ class Puppy:
 
         # # Initialize the touch sensor. It is used to detect when someone pets
         # # the puppy.
-        # self.touch_sensor = TouchSensor(Port.S1)
 
         self.pet_count_timer = StopWatch()
         self.feed_count_timer = StopWatch()
@@ -115,9 +110,10 @@ class Puppy:
         # These attributes are used in the update methods.
         self.prev_petted = None
         self.prev_color = None
-    
+
     ''' 以下是動作與偵測部分'''
-    #移動頭部
+    # 移動頭部
+
     def move_head(self, target):
         """Move the head to the target angle.
 
@@ -128,42 +124,44 @@ class Puppy:
                 are above this point.
         """
         self.head_motor.run_target(20, target)
-    #旋轉是內建的driveBase內建的函式
+    # 旋轉是內建的driveBase內建的函式
     # straight(distance), turn(angle), settings(straight_speed, straight_acceleration, turn_rate, turn_acceleration)
     # stop(), distance()量測距離
     # 觸摸功能：self.touch_A.pressed() True if the sensor is pressed, False if it is not pressed.
     # 顏色感知功能：self.color()
-    
+
     #timer: 判斷等待的時間是否超過特定的秒數
     def waitOver(self, value):
         n = StopWatch.time()
-        value *= 1000 
-        
+        value *= 1000
+
         while n < value:
             condition = False
 
         StopWatch.reset()
         return True
     '''以下是事件部分'''
+
     def boneAte(self):
         if self.color_sensor.color() != None:
             # print(self.color_sensor.color())
             return True
         else:
             return False
-    
+
     def isTouched(self):
-        touched=self.touch_A.pressed()
+        touched = self.touch_A.pressed()
         return touched
-    
+
     def faceExpression(self, condition):
         self.eyes = self.condition
-    
+
     def soundEffect(self, effect):
         ### speaker.set_volume(volumn, which='_all')
         self.ev3.speaker.play_file(SoundFile.effect)
-        
+
     '''以下是狀態部分'''
+
     def reset(self):
         # Set initial behavior.
         # self.move_head(20)
@@ -182,13 +180,14 @@ class Puppy:
     Idle
     30s內偵測到拍背
     '''
+
     def idle(self):
         print('idle')
         self.eyes = self.NEUTRAL_EYES
         # self.faceExpression(MIDDLE_RIGHT)
         # self.faceExpression(MIDDLE_LEFT)
-        self.ev3.speaker.play_file(SoundFile.DOG_SNIFF)        
-        #如果在等待時間不超過三十秒
+        self.ev3.speaker.play_file(SoundFile.DOG_SNIFF)
+        # 如果在等待時間不超過三十秒
         print(self.isTouched())
         if self.isTouched() == True:
             self.count_changed_timer.reset()
@@ -196,12 +195,13 @@ class Puppy:
             self.count_changed_timer.reset()
         # while self.waitOver(value) == False:
         if self.count_changed_timer.time() > 30000:
-                print('boring~')
+            print('boring~')
     '''
     wandering
     30s內吃到骨頭
     經過30s沒有吃到骨頭
     '''
+
     def wandering(self):
         print('wandering')
         if self.count_changed_timer.time() < 30000:
@@ -213,24 +213,21 @@ class Puppy:
             # self.faceExpression(PINCHED_RIGHT)
             # self.faceExpression(PINCHED_MIDDLE)
             # self.soundEffect(DOG_BARK_1)
-            if self.boneAte() and self.boneAte()== True:
+            if self.boneAte() and self.boneAte() == True:
                 self.count_changed_timer.reset()
                 self.behavior = self.happy()
-        else :
+        else:
             # self.count_changed_timer.time() > 30000:
             # self.count_changed_timer.reset()
             self.behavior = self.sad()
-        
-                
+
     '''
     sleep
     偵測到拍背
     受到攻擊
     '''
     # def asleep(self):
-        
-        
-    
+
     '''alert
     待機超過30秒
     受到攻擊
@@ -239,29 +236,29 @@ class Puppy:
         self.faceExpression(self, ANGRY)
         while self.waitOver(self, ) == False:
             self.soundEffect(self, DOG_GROWL)
-    
+
     '''
     rage
     狂奔超過10秒
     '''
+
     def rage(self):
-        #把速度加上去
-        self.robot.settings(straight_speed, straight_acceleration, turn_rate, turn_acceleration)
+        # 把速度加上去
+        self.robot.settings(
+            straight_speed, straight_acceleration, turn_rate, turn_acceleration)
         self.soundEffect(self, SPEED_UP)
         self.robot.turn(360)
         self.robot.run_target(self)
         self.soundEffect(self, SPEED_IDLE)
         self.robot.turn(360)
         self.soundEffect(self, SPEED_DOWN)
-        
-        
-        
-    
+
     '''
     sad
     待機超過30s
     受到攻擊
     '''
+
     def sad(self):
         print('sad')
         # self.soundEffect(self, CRYING)
@@ -271,11 +268,12 @@ class Puppy:
         # self.soundEffect(self, CRYING)
         # self.faceExpression(self, TIRED_Right)
         # self.soundEffect(self, CRYING)
-    
+
     '''
     happy
     完成動作後: 3s後
     '''
+
     def happy(self):
         print('happy')
         # self.soundEffect(self, DOG_BARK_1)
@@ -285,15 +283,14 @@ class Puppy:
         # self.soundEffect(self, DOG_BARK_1)
         # self.faceExpression(self, CRAZY_1)
         # self.soundEffect(self, DOG_BARK_1)
-        # self.faceExpression(self, CRAZY_2)                        
+        # self.faceExpression(self, CRAZY_2)
 
         '''goto 跟隨
         '''
-        #偵測到拍背
+        # 偵測到拍背
         if self.isTouched() == True:
             self.count_changed_timer.reset()
-            self.behavior=self.idle()
-
+            self.behavior = self.idle()
 
     def go_to_sleep(self):
         """Makes the puppy go to sleep."""
@@ -361,8 +358,6 @@ class Puppy:
             self.ev3.speaker.play_file(SoundFile.DOG_BARK_1)
             self.hop()
         wait(500)
-        
-
 
     @property
     def behavior(self):
@@ -397,7 +392,7 @@ class Puppy:
             self.monitor_counts()
             self.behavior()
             wait(100)
-            
+
 
 if __name__ == '__main__':
     puppy = Puppy()
