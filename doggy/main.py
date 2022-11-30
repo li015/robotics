@@ -69,10 +69,6 @@ class Puppy:
         self.robot = DriveBase(
             self.left_motor, self.right_motor, wheel_diameter=30, axle_track=105)
 
-        # Note:如果要單獨控馬達的話好像要用到stop(),要注意一下
-
-        self._behavior = None
-
         # Initialize the Color Sensor. It is used to detect the colors when
         # feeding the puppy.
         self.color_sensor = ColorSensor(Port.S3)
@@ -392,6 +388,36 @@ class Puppy:
             self.monitor_counts()
             self.behavior()
             wait(100)
+
+    @property
+    def eyes(self):
+        """Gets and sets the eyes."""
+        return self._eyes
+
+    @eyes.setter
+    def eyes(self, value):
+        if value != self._eyes:
+            self._eyes = value
+            self.ev3.screen.load_image(value)
+
+    def update_eyes(self):
+        if self.eyes_timer_1.time() > self.eyes_timer_1_end:
+            self.eyes_timer_1.reset()
+            if self.eyes == self.SLEEPING_EYES:
+                self.eyes_timer_1_end = urandom.randint(1, 5) * 1000
+                self.eyes = self.TIRED_RIGHT_EYES
+            else:
+                self.eyes_timer_1_end = 250
+                self.eyes = self.SLEEPING_EYES
+
+        if self.eyes_timer_2.time() > self.eyes_timer_2_end:
+            self.eyes_timer_2.reset()
+            if self.eyes != self.SLEEPING_EYES:
+                self.eyes_timer_2_end = urandom.randint(1, 10) * 1000
+                if self.eyes != self.TIRED_LEFT_EYES:
+                    self.eyes = self.TIRED_LEFT_EYES
+                else:
+                    self.eyes = self.TIRED_RIGHT_EYES
 
 
 if __name__ == '__main__':
