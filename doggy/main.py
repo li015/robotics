@@ -384,9 +384,33 @@ class Puppy:
             else:
                 return False
             
-    # gyro2 continually assess gyro & ultrasonic sensor 
+    # gyro2 continually assess gyro & ultrasonic sensor every 100ms
     def gyro2(self):    
-            
+        self.gyro_timer.reset()
+
+        yield self._behavior #current behavior
+        
+        while True:
+
+            if self.gyro.speed() < 50:
+                return False
+            else:
+                if self.d_1.distance() < 50:
+                    yield True
+            # Beep and then restore the previous behavior from before the
+            # ultrasonic sensor detected a movement.
+            self.gyro.timer.reset()
+            self.ev3.speaker.beep(1000, -1)
+            while self.gyro_timer.time()<100:
+                yield self._behavior
+            self.ev3.speaker.beep(0,-1)
+
+        # This adds a small delay since we don't need to read these sensors
+        # continuously. Reading once every 100 milliseconds is fast enough.
+            self.gyro_timer.reset()
+            while self.gyro_timer.time() < 100:
+                yield
+
 
 
              
