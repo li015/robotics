@@ -384,7 +384,8 @@ class Puppy:
             else:
                 return False
             
-            
+    # gyro2 continually assess gyro & ultrasonic sensor 
+    def gyro2(self):    
             
 
 
