@@ -115,6 +115,10 @@ class Puppy:
         # These attributes are used in the update methods.
         self.prev_petted = None
         self.prev_color = None
+        # These attributes are used in gyro (movement detection)
+        self.gyro_timer = StopWatch()
+        GYRO_MAXRATE = 50
+        DISTANCE_NEAR = 50
     
     ''' 以下是動作與偵測部分'''
     #移動頭部
@@ -362,6 +366,30 @@ class Puppy:
             self.hop()
         wait(500)
         
+    # Test gyro speed and angle first
+    def gyro_test(self):
+        print('Gryo rotational speed = ' + self.gyro.speed() + 'deg/s')
+        # print( 'n/Gryo rotational angle = ' + self.gyro.angle() + 'deg')
+        # From EV3 documentation: If you use the angle() method, 
+        # you cannot use the speed() method in the same program. 
+        # Doing so would reset the sensor angle to zero every time you read the speed.
+
+    def gyro(self):
+        if self.gyro.speed() < GYRO_MAXRATE:
+            return False
+        else:
+            if self.d_1.distance () < DISTANCE_NEAR:
+                return True
+
+            else:
+                return False
+            
+            
+            
+
+
+             
+            
 
 
     @property
