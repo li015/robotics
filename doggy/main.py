@@ -75,10 +75,21 @@ class Puppy:
 
         # # Initialize the touch sensor. It is used to detect when someone pets
         # # the puppy.
-
+        
+        #####世界內計時器
         self.pet_count_timer = StopWatch()
         self.feed_count_timer = StopWatch()
         self.count_changed_timer = StopWatch()
+        #####行為內計時器initialize
+        #待機超過30s=>gotosleep
+        #遊走超過30s=>sad
+        #狂奔10s=>gotosleep
+        #難過超過30s=>gotosleep
+        #警戒超過30s=>idle
+        #開心3s=>follow
+
+
+
 
         # These attributes are initialized later in the reset() method.
         self.pet_target = None
@@ -204,63 +215,29 @@ class Puppy:
 
     def wandering(self):
         print('wandering')
-        if self.count_changed_timer.time() < 30000:
+        # if self.count_changed_timer.time() < 30000:
 
-            self.eyes = self.PINCHED_LEFT
-            self.eyes = self.PINCHED_RIGHT
-            self.ev3.speaker.play_file(SoundFile.DOG_BARK_1)
+        self.eyes = self.PINCHED_LEFT
+        self.eyes = self.PINCHED_RIGHT
+        self.ev3.speaker.play_file(SoundFile.DOG_BARK_1)
             # self.faceExpression(PINCHED_LEFT)
             # self.faceExpression(PINCHED_RIGHT)
             # self.faceExpression(PINCHED_MIDDLE)
             # self.soundEffect(DOG_BARK_1)
-            if self.boneAte() and self.boneAte() == True:
-                self.count_changed_timer.reset()
-                self.behavior = self.happy()
+ 
+        # 判斷多少時間內吃到???
+        if self.boneAte() == True:
+            self.count_changed_timer.reset()
+            self.behavior = self.happy()
         else:
             # self.count_changed_timer.time() > 30000:
             # self.count_changed_timer.reset()
             self.behavior = self.sad()
-
-    '''
-    sleep
-    偵測到拍背
-    受到攻擊
-    '''
-    # def asleep(self):
-
-    '''alert
-    待機超過30秒
-    受到攻擊
-    '''
-    def alert():
-        self.faceExpression(self, ANGRY)
-        while self.waitOver(self, ) == False:
-            self.soundEffect(self, DOG_GROWL)
-
-    '''
-    rage
-    狂奔超過10秒
-    '''
-
-    def rage(self):
-        # 把速度加上去
-        self.robot.settings(
-            straight_speed, straight_acceleration, turn_rate, turn_acceleration)
-        self.soundEffect(self, SPEED_UP)
-        self.robot.turn(360)
-        self.robot.run_target(self)
-        self.soundEffect(self, SPEED_IDLE)
-        self.robot.turn(360)
-        self.soundEffect(self, SPEED_DOWN)
-
-    '''
-    sad
-    待機超過30s
-    受到攻擊
-    '''
+    
 
     def sad(self):
         print('sad')
+        sad_timer= StopWatch()
         # self.soundEffect(self, CRYING)
         # self.faceExpression(self, TIRED_LEFT)
         # self.soundEffect(self, CRYING)
@@ -268,6 +245,53 @@ class Puppy:
         # self.soundEffect(self, CRYING)
         # self.faceExpression(self, TIRED_Right)
         # self.soundEffect(self, CRYING)
+        
+        if sad_timer.time() < 30000:
+            if self.gyro ==True:
+                print('rage')
+                self.behavior=self.rage
+            
+        ###受到攻擊
+        elif sad_timer.time() > 30000:
+            print('gotosleep')
+            self.behavior=self.go_to_sleep
+            
+
+   
+    def alert():
+        print('alert')
+        # self.faceExpression(self, ANGRY)
+        # while self.waitOver(self, ) == False:
+        #     self.soundEffect(self, DOG_GROWL)
+
+        ###如果受到攻擊
+
+        self.behavior=self.rage
+
+
+    
+    '''
+    rage
+    狂奔超過10秒
+    '''
+
+    def rage(self):
+        print('rage')
+        self.rage_timer= StopWatch()
+        # 把速度加上去
+        self.robot.settings(
+            straight_speed, straight_acceleration, turn_rate, turn_acceleration)
+        # self.soundEffect(self, SPEED_UP)
+        self.robot.turn(360)
+        self.robot.run_target(self)
+        # self.soundEffect(self, SPEED_IDLE)
+        self.robot.turn(360)
+        # self.soundEffect(self, SPEED_DOWN)
+
+        if rage_timer.time()>10000:
+            self.behavior=self.go_to_sleep
+
+
 
     '''
     happy
@@ -384,13 +408,9 @@ class Puppy:
             else:
                 return False
             
-            
-            
-
-
-             
-            
-
+###########
+#定義
+###########
 
     @property
     def behavior(self):
@@ -412,20 +432,6 @@ class Puppy:
             self._behavior_changed = False
             return True
         return False
-
-    def monitor_counts(self):
-        if self.count_changed_timer.time() > 30000:
-            # If nothing has happened for 30 seconds, go to sleep
-            self.count_changed_timer.reset()
-            self.behavior = self.idle()
-
-    def run(self):
-        self.reset()
-        while True:
-            self.monitor_counts()
-            self.behavior()
-            wait(100)
-
     @property
     def eyes(self):
         """Gets and sets the eyes."""
@@ -456,6 +462,36 @@ class Puppy:
                 else:
                     self.eyes = self.TIRED_RIGHT_EYES
 
+############
+#計時器
+############
+    def monitor_counts(self):
+        #是否30s沒換行為
+        if self.count_changed_timer.time() > 30000:
+            # If nothing has happened for 30 seconds, go to sleep
+            self.count_changed_timer.reset()
+            self.behavior = self.idle()
+
+
+        #待機超過30s=>gotosleep
+        #遊走超過30s=>sad
+        #狂奔10s=>gotosleep
+        #難過超過30s=>gotosleep
+    def sad_time_counts(self):
+        if self.sad_timer.time()>30000:
+            self.sad_timer.reset()
+            self.behavior = self.rage()
+        #警戒超過30s=>idle
+        #開心3s=>follow
+
+    
+
+    def run(self):
+        self.reset()
+        while True:
+            self.monitor_counts()
+            self.behavior()
+            wait(100)
 
 if __name__ == '__main__':
     puppy = Puppy()
