@@ -284,9 +284,16 @@ class Puppy:
         '''goto 跟隨
         '''
         # 偵測到拍背
+        if self.count_changed_timer.time() >30000:
+            self.count_changed_timer.reset()
+            self.behavior = self.follow
+
+    def follow(self):
+        print('follow')
+        # 偵測到拍背
         if self.isTouched() == True:
             self.count_changed_timer.reset()
-            self.behavior = self.idle()
+            self.behavior = self.idle
 
     def go_to_sleep(self):
         """Makes the puppy go to sleep."""
