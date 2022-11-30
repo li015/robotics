@@ -268,7 +268,6 @@ class Puppy:
         # self.soundEffect(self, CRYING)
         # self.faceExpression(self, TIRED_Right)
         # self.soundEffect(self, CRYING)
-
     '''
     happy
     完成動作後: 3s後
@@ -374,7 +373,7 @@ class Puppy:
         # you cannot use the speed() method in the same program. 
         # Doing so would reset the sensor angle to zero every time you read the speed.
 
-    def gyro(self):
+    def gyro1(self):
         if self.gyro.speed() < GYRO_MAXRATE:
             return False
         else:
