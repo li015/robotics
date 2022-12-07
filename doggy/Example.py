@@ -258,6 +258,8 @@ class Puppy:
         wait(500)
         self.sit_down()
         self.reset()
+# The next 4 methods define actions that are used to make some parts of
+    # the behaviors above.
 
     def sit_down(self):
         """Makes the puppy sit down."""
@@ -268,9 +270,7 @@ class Puppy:
         self.right_leg_motor.stop()
         wait(100)
 
-    # The next 4 methods define actions that are used to make some parts of
-    # the behaviors above.
-
+    
     def stand_up(self):
         """Makes the puppy stand up."""
         self.left_leg_motor.run_target(100, self.HALF_UP_ANGLE, wait=False)
