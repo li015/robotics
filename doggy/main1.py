@@ -22,28 +22,6 @@ from pybricks.robotics import DriveBase
 import threading
 import time
 
-def threading_example():
-  # 子執行緒的工作函數
-    def job():
-        for i in range(5):
-            print("Child thread:", i)
-            time.sleep(1)
-
-    # 建立一個子執行緒
-    t = threading.Thread(target = job)
-
-    # 執行該子執行緒
-    t.start()
-
-    # 主執行緒繼續執行自己的工作
-    for i in range(3):
-        print("Main thread:", i)
-        time.sleep(1)
-
-    # 等待 t 這個子執行緒結束
-    # t.join()
-
-    print("Done.")
 
 class Puppy:
 
@@ -173,23 +151,23 @@ class Puppy:
     # the behaviors below.
     def sit_down(self):
         """Makes the puppy sit down."""
-        self.left_leg_motor.run(-50)
-        self.right_leg_motor.run(-50)
+        self.left_motor.run(-50)
+        self.right_motor.run(-50)
         wait(1000)
-        self.left_leg_motor.stop()
-        self.right_leg_motor.stop()
+        self.left_motor.stop()
+        self.right_motor.stop()
         wait(100)
 
     def stand_up(self):
         """Makes the puppy stand up."""
-        self.left_leg_motor.run_target(100, self.HALF_UP_ANGLE, wait=False)
-        self.right_leg_motor.run_target(100, self.HALF_UP_ANGLE)
-        while not self.left_leg_motor.control.done():
+        self.left_motor.run_target(100, self.HALF_UP_ANGLE, wait=False)
+        self.right_motor.run_target(100, self.HALF_UP_ANGLE)
+        while not self.left_motor.control.done():
             wait(100)
 
-        self.left_leg_motor.run_target(50, self.STAND_UP_ANGLE, wait=False)
-        self.right_leg_motor.run_target(50, self.STAND_UP_ANGLE)
-        while not self.left_leg_motor.control.done():
+        self.left_motor.run_target(50, self.STAND_UP_ANGLE, wait=False)
+        self.right_motor.run_target(50, self.STAND_UP_ANGLE)
+        while not self.left_motor.control.done():
             wait(100)
 
         wait(500)
@@ -198,31 +176,31 @@ class Puppy:
         """Makes the puppy stretch its legs backwards."""
         self.stand_up()
 
-        self.left_leg_motor.run_target(100, self.STRETCH_ANGLE, wait=False)
-        self.right_leg_motor.run_target(100, self.STRETCH_ANGLE)
-        while not self.left_leg_motor.control.done():
+        self.left_motor.run_target(100, self.STRETCH_ANGLE, wait=False)
+        self.right_motor.run_target(100, self.STRETCH_ANGLE)
+        while not self.left_motor.control.done():
             wait(100)
 
         self.ev3.speaker.play_file(SoundFile.DOG_WHINE)
 
-        self.left_leg_motor.run_target(100, self.STAND_UP_ANGLE, wait=False)
-        self.right_leg_motor.run_target(100, self.STAND_UP_ANGLE)
-        while not self.left_leg_motor.control.done():
+        self.left_motor.run_target(100, self.STAND_UP_ANGLE, wait=False)
+        self.right_motor.run_target(100, self.STAND_UP_ANGLE)
+        while not self.left_motor.control.done():
             wait(100)
 
     def hop(self):
         """Makes the puppy hop."""
-        self.left_leg_motor.run(500)
-        self.right_leg_motor.run(500)
+        self.left_motor.run(500)
+        self.right_motor.run(500)
         wait(275)
-        self.left_leg_motor.hold()
-        self.right_leg_motor.hold()
+        self.left_motor.hold()
+        self.right_motor.hold()
         wait(275)
-        self.left_leg_motor.run(-50)
-        self.right_leg_motor.run(-50)
+        self.left_motor.run(-50)
+        self.right_motor.run(-50)
         wait(275)
-        self.left_leg_motor.stop()
-        self.right_leg_motor.stop()
+        self.left_motor.stop()
+        self.right_motor.stop()
 
     # 狂奔不知道要不要寫
     # def runnn(self):
@@ -367,9 +345,6 @@ class Puppy:
                 self.gyro_test()
                 self.behavior = self.rage
                 break
-            # else:
-            #     continue
-            break
         else:
             self.behavior=self.go_to_sleep
 
@@ -398,9 +373,9 @@ class Puppy:
     # Start in a reset state
     def reset(self):
         # must be called when puppy is sitting down.
-        # self.move_head(20)
-        # self.left_leg_motor.reset_angle(0)
-        # self.right_leg_motor.reset_angle(0)
+        self.head_motor.reset_angle(0)
+        self.left_motor.reset_angle(0)
+        self.right_motor.reset_angle(0)
         self.behavior = self.idle
 
 
@@ -411,12 +386,15 @@ class Puppy:
     
         ##聲音表情
         def idle_expression():
+            self.move_head(10)
             for i in range(5):
                 print("idle thread:", i)
-                self.update_eyes()
-                # self.eyes = self.MIDDLE_RIGHT
-                # self.eyes = self.SLEEPING_EYES
+                # self.update_eyes()
+                self.eyes = self.MIDDLE_RIGHT
+                
+                
                 self.ev3.speaker.play_file(SoundFile.DOG_SNIFF)
+                self.eyes = self.SLEEPING_EYES
                 time.sleep(1)
         t = threading.Thread(target = idle_expression)
         t.start()
@@ -534,12 +512,11 @@ class Puppy:
             print('go_to_sleep')
 
         ###聲音表情
-        # self.eyes = self.TIRED_EYES
-        # self.sit_down()
-        # self.move_head(self.HEAD_DOWN_ANGLE)
-        # self.eyes = self.SLEEPING_EYES
-        # self.ev3.speaker.play_file(SoundFile.SNORING)
-    
+        self.eyes = self.TIRED_EYES
+        self.sit_down() #不是真的坐下
+        self.move_head(-20)
+        self.eyes = self.SLEEPING_EYES
+        self.ev3.speaker.play_file(SoundFile.SNORING)
         ###事件
         self.go_to_sleep_tree()
 
@@ -661,7 +638,6 @@ class Puppy:
             wait(100)
 
 if __name__ == '__main__':
-    threading_example()
     puppy = Puppy()
     puppy.run()
     

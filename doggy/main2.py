@@ -414,7 +414,7 @@ class Puppy:
             for i in range(5):
                 print("idle thread:", i)
                 self.update_eyes()
-                # self.eyes = self.MIDDLE_RIGHT
+                # self.eyes = self.MIDDLE_RIGHT #這樣寫不會換表情
                 # self.eyes = self.SLEEPING_EYES
                 self.ev3.speaker.play_file(SoundFile.DOG_SNIFF)
                 time.sleep(1)
