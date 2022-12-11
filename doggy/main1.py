@@ -40,6 +40,8 @@ class Puppy:
     MIDDLE_RIGHT = Image(ImageFile.MIDDLE_RIGHT)
     MIDDLE_LEFT = Image(ImageFile.MIDDLE_LEFT)
 
+    '''get '''
+
     def __init__(self):
 
         self.ev3 = EV3Brick()
@@ -50,12 +52,13 @@ class Puppy:
         self.right_motor = Motor(Port.C)
         self.gyro = GyroSensor(Port.S2)
         self.touch_A = TouchSensor(Port.S4)
-        self.d_1 = UltrasonicSensor(Port.S1)
+        #self.d_1 = UltrasonicSensor(Port.S1)
         self.color_sensor = ColorSensor(Port.S3)
         # 因為有給定gear train, motor.run_target(speed,target)的角度這裡直接是輸出所轉過的角度
         self.head_motor = Motor(Port.B, Direction.COUNTERCLOCKWISE,
                                 gears=[[1, 24], [12, 36]])
-        
+        self.hinder_motor = Motor(
+            Port.A, Direction.COUNTERCLOCKWISE, gears=[1, 8])
 
         # 初始化車輛基座 ; Initialize the drive base.
         # 有關 DriveBase的使用: https://pybricks.com/ev3-micropython/robotics.html
@@ -68,13 +71,13 @@ class Puppy:
         self.feed_count_timer = StopWatch()
         self.count_changed_timer = StopWatch()
 
-        self.idle_timer = StopWatch()#待機超過30s=>gotosleep
-        self.rage_timer = StopWatch() #狂奔10s=>gotosleep
-        self.sad_timer = StopWatch() #難過超過30s=>gotosleep
-        self.alert_timer = StopWatch() #警戒超過30s=>idle
-        self.happy_timer = StopWatch() #開心3s=>follow
-        self.ateyet_timer = StopWatch() #遊走30內沒吃到=>sad
-        self.sleep_timer = StopWatch() #測試用
+        self.idle_timer = StopWatch()  # 待機超過30s=>gotosleep
+        self.rage_timer = StopWatch()  # 狂奔10s=>gotosleep
+        self.sad_timer = StopWatch()  # 難過超過30s=>gotosleep
+        self.alert_timer = StopWatch()  # 警戒超過30s=>idle
+        self.happy_timer = StopWatch()  # 開心3s=>follow
+        self.ateyet_timer = StopWatch()  # 遊走30內沒吃到=>sad
+        self.sleep_timer = StopWatch()  # 測試用
 
         # These attributes are initialized later in the reset() method.
         # self.pet_target = None
@@ -110,10 +113,7 @@ class Puppy:
         self.gyro_timer = StopWatch()
         self.GYRO_MAXRATE = 50
         self.DISTANCE_NEAR = 50
-    
 
-    
-    
     def update_eyes(self):
         if self.eyes_timer_1.time() > self.eyes_timer_1_end:
             self.eyes_timer_1.reset()
@@ -135,8 +135,8 @@ class Puppy:
 
     ''' movement'''
 
-    # 移動頭部（卡住時要用）
-    def move_head(self, target):
+    # 移動頭部
+    def raise_head(self):
         """Move the head to the target angle.
 
         Arguments:.
@@ -145,10 +145,28 @@ class Puppy:
                 negative values are below this point and positive values
                 are above this point.
         """
-        self.head_motor.run_target(20, target)
+        self.head_motor.run_target(20, 40)
+
+    def bow_head(self):
+        """Move the head to the target angle.
+
+        Arguments:.
+            target (int):
+                The target angle in degrees. 0 is the starting position,
+                negative values are below this point and positive values
+                are above this point.
+        """
+        self.head_motor.run_target(20, -40)
+
+    def stand(self):
+        self.hinder_motor.run_target(30, 40)
+
+    def sit(self):
+        self.hinder_motor.run_target(30, -40)
 
     # the next 4 methods define actions that are used to make some parts of
     # the behaviors below.
+
     def sit_down(self):
         """Makes the puppy sit down."""
         self.left_motor.run(-50)
@@ -208,31 +226,31 @@ class Puppy:
         # straight(distance), turn(angle), settings(straight_speed, straight_acceleration, turn_rate, turn_acceleration)
         # stop(), distance()量測距離
 
-
     ''' sensor '''
+
     def gyro_test(self):
         print('Gryo rotational speed = ' + str(self.gyro.speed()) + 'deg/s')
         # print( 'n/Gryo rotational angle = ' + self.gyro.angle() + 'deg')
-        # From EV3 documentation: If you use the angle() method, 
-        # you cannot use the speed() method in the same program. 
+        # From EV3 documentation: If you use the angle() method,
+        # you cannot use the speed() method in the same program.
         # Doing so would reset the sensor angle to zero every time you read the speed.
 
     def gyro1(self):
         if self.gyro.speed() < self.GYRO_MAXRATE:
             return False
         else:
-            if self.d_1.distance () < self.DISTANCE_NEAR:
+            if self.d_1.distance() < self.DISTANCE_NEAR:
                 return True
 
             else:
                 return False
-            
+
     # gyro2 continually assess gyro & ultrasonic sensor every 100ms
-    def gyro2(self):    
+    def gyro2(self):
         self.gyro_timer.reset()
 
-        yield self._behavior #current behavior
-        
+        yield self._behavior  # current behavior
+
         while True:
 
             if self.gyro.speed() < 50:
@@ -244,9 +262,9 @@ class Puppy:
             # ultrasonic sensor detected a movement.
             self.gyro.timer.reset()
             self.ev3.speaker.beep(1000, -1)
-            while self.gyro_timer.time()<100:
+            while self.gyro_timer.time() < 100:
                 yield self._behavior
-            self.ev3.speaker.beep(0,-1)
+            self.ev3.speaker.beep(0, -1)
 
         # This adds a small delay since we don't need to read these sensors
         # continuously. Reading once every 100 milliseconds is fast enough.
@@ -254,7 +272,7 @@ class Puppy:
             while self.gyro_timer.time() < 100:
                 yield
 
-    #check color sensor 顏色感知功能：self.color()
+    # check color sensor 顏色感知功能：self.color()
     def isboneAte(self):
         if self.color_sensor.color() != None:
             # print(self.color_sensor.color())
@@ -262,23 +280,22 @@ class Puppy:
         else:
             return False
 
-    #check touch sensor 觸摸功能：self.touch_A.pressed() True if the sensor is pressed, False if it is not pressed.
+    # check touch sensor 觸摸功能：self.touch_A.pressed() True if the sensor is pressed, False if it is not pressed.
     def isTouched(self):
         touched = self.touch_A.pressed()
         return touched
 
-    #check ultrasonic sensor
-    #def istooclose(self):
-
+    # check ultrasonic sensor
+    # def istooclose(self):
 
     '''behavior changer 判斷是否要換行為'''
 
-    #check when idle (wandering/ go to sleep)
+    # check when idle (wandering/ go to sleep)
     def idle_tree(self):
         if self.idle_timer.time() > 0:
             self.idle_timer.reset()
         while self.idle_timer.time() < 30000:
-            
+
             if self.isTouched() == True:
                 print(self.isTouched())
                 self.behavior = self.wandering
@@ -287,198 +304,255 @@ class Puppy:
             print("over30s")
             self.behavior = self.go_to_sleep
 
-    #check when wandering (happy/sad)
+    # check when wandering (happy/sad)
     def wandering_tree(self):
         if self.ateyet_timer.time() > 0:
             self.ateyet_timer.reset()
-        while self.ateyet_timer.time() <10000:
+        while self.ateyet_timer.time() < 30000:
             if self.isboneAte() == True:
                 print(self.isboneAte())
                 self.behavior = self.happy
                 break
         else:
-            print("10s no food!")
+            print("30s no food!")
             self.behavior = self.sad
-    
-    #check when  sad (rage/ go to sleep)
+
+    # check when  sad (rage/ go to sleep)
     def sad_tree(self):
         if self.sad_timer.time() > 0:
             self.sad_timer.reset()
-        while self.sad_timer.time() <10000 :
+        while self.sad_timer.time() < 10000:
 
-            if self.gyro.speed() >30:
+            if self.gyro.speed() > 30:
                 self.gyro_test()
                 self.behavior = self.rage
                 break
 
         else:
-            self.behavior=self.go_to_sleep
-    
-    #check when rage (go to sleep)
+            self.behavior = self.go_to_sleep
+
+    # check when rage (go to sleep)
     def rage_tree(self):
         if self.rage_timer.time() > 0:
             self.rage_timer.reset()
-        while self.rage_timer.time() <10000 :
-            if self.rage_timer.time() <10000:
+        while self.rage_timer.time() < 10000:
+            if self.rage_timer.time() < 10000:
                 continue
         else:
-            self.behavior=self.go_to_sleep
-    
-    #check when happy ( follow )
+            self.behavior = self.go_to_sleep
+
+    # check when happy ( follow )
     def happy_tree(self):
         if self.happy_timer.time() > 0:
             self.happy_timer.reset()
-        while self.happy_timer.time() <3000 :
-            if self.happy_timer.time() <3000:
+        while self.happy_timer.time() < 15000:
+            if self.happy_timer.time() < 15000:
                 continue
         else:
-            self.behavior=self.follow
+            self.behavior = self.follow
 
+    # check when alert (rage/ idle )
 
-    #check when alert (rage/ idle )
     def alert_tree(self):
         if self.alert_timer.time() > 0:
             self.alert_timer.reset()
-        while self.alert_timer.time() <10000 :
+        while self.alert_timer.time() < 10000:
 
-            if self.gyro.speed() >30:
+            if self.gyro.speed() > 30:
                 self.gyro_test()
                 self.behavior = self.rage
                 break
         else:
-            self.behavior=self.go_to_sleep
+            self.behavior = self.go_to_sleep
 
-    #check when follow
+    # check when follow
     def follow_tree(self):
         if self.isTouched() == True:
             self.behavior = self.idle
 
-    #check when sleep
+    # check when sleep
     def go_to_sleep_tree(self):
-        if self.sleep_timer.time()>0:
+        if self.sleep_timer.time() > 0:
             self.sleep_timer.reset()
-        while self.sleep_timer.time()< 30000:
-            ###目前用拍背判斷，還沒有測距
+        while self.sleep_timer.time() < 30000:
+            # 目前用拍背判斷，還沒有測距
             if self.isTouched() == True:
                 print(self.isTouched())
                 self.behavior = self.alert
                 break
         else:
-            #睡著到起來遊走中間可能要有行為
-            self.behavior = self.wandering
-
+            # 睡著到起來遊走中間可能要有行為
+            self.behavior = self.idle
 
     '''behavior'''
 
     # Start in a reset state
     def reset(self):
+        #self.spkr.speak('Hello, I am Robot')
         # must be called when puppy is sitting down.
         self.head_motor.reset_angle(0)
         self.left_motor.reset_angle(0)
         self.right_motor.reset_angle(0)
+        self.hinder_motor.reset_angle(0)
         self.behavior = self.idle
 
+    # Idle
 
-    #Idle
     def idle(self):
         if self.did_behavior_change:
             print('idle')
-    
-        ##聲音表情
+
+        # 聲音表情
         def idle_expression():
-            self.move_head(10)
-            for i in range(5):
+            self.eyes = self.MIDDLE_RIGHT
+            # 站立
+            self.stand()
+            # 抬頭
+            self.raise_head()
+
+            for i in range(4):
                 print("idle thread:", i)
-                # self.update_eyes()
+                #self.ev3.speaker.set_volume(80, which='_all_')
+                # self.ev3.speaker.play_file(SoundFile.DOG_SNIFF)
+                self.robot.turn(80)
                 self.eyes = self.MIDDLE_RIGHT
-                
-                
-                self.ev3.speaker.play_file(SoundFile.DOG_SNIFF)
+                wait(500)
                 self.eyes = self.SLEEPING_EYES
+                wait(500)
+                self.eyes = self.MIDDLE_LEFT
+                wait(500)
+                self.robot.turn(-80)
+                self.eyes = self.SLEEPING_EYES
+                wait(500)
                 time.sleep(1)
-        t = threading.Thread(target = idle_expression)
+        t = threading.Thread(target=idle_expression)
         t.start()
         # 事件 #如果在等待時間不超過三十秒
         self.idle_tree()
 
-  
-    #wandering
+    # wandering
+
     def wandering(self):
         if self.did_behavior_change:
             print('wandering')
 
-        ##聲音表情
-        self.eyes = self.PINCHED_LEFT
-        self.eyes = self.PINCHED_RIGHT
-        self.ev3.speaker.play_file(SoundFile.DOG_BARK_1)
-            # self.faceExpression(PINCHED_LEFT)
-            # self.faceExpression(PINCHED_RIGHT)
-            # self.faceExpression(PINCHED_MIDDLE)
-            # self.soundEffect(DOG_BARK_1)
+        def wandering_behave():
+            # 聲音表情
+            self.robot.drive(-50, 30)
+            for i in range(0, 10):
+                print("wander thread:", i)
+                self.eyes = self.PINCHED_LEFT
+                wait(500)
+                self.eyes = self.PINCHED_RIGHT
+                wait(500)
+            self.ev3.speaker.play_file(SoundFile.DOG_BARK_1)
+            time.sleep(1)
+        t = threading.Thread(target=wandering_behave)
+        t.start()
+        # self.faceExpression(PINCHED_LEFT)
+        # self.faceExpression(PINCHED_RIGHT)
+        # self.faceExpression(PINCHED_MIDDLE)
+        # self.soundEffect(DOG_BARK_1)
 
         # 事件
         self.wandering_tree()
-    
-    #sad
+
+    # sad
     def sad(self):
         if self.did_behavior_change:
             print('sad')
-        
-        ##聲音表情
-        # self.soundEffect(self, CRYING)
-        # self.faceExpression(self, TIRED_LEFT)
-        # self.soundEffect(self, CRYING)
-        # self.faceExpression(self, TIRED_Middle)
-        # self.soundEffect(self, CRYING)
-        # self.faceExpression(self, TIRED_Right)
-        # self.soundEffect(self, CRYING)
-        
+        # 聲音表情
+
+        def sad_behave():
+            # 坐下
+            self.sit()
+            self.bow_head()
+            self.soundEffect(self, CRYING)
+            self.faceExpression(self, TIRED_LEFT)
+            wait(275)
+            self.faceExpression(self, TIRED_Middle)
+            wait(275)
+            self.faceExpression(self, TIRED_Right)
+            wait(275)
+            time.sleep(1)
+        t = threading.Thread(target=sad_behave)
+        t.start()
+
         # 事件
         self.sad_tree()
-            
 
-    #alert
+    # alert
+
     def alert(self):
+        # self.robot.settings(150, 5, 30, 5)
         if self.did_behavior_change:
             print('alert')
 
-        ##聲音表情
-        # self.faceExpression(self, ANGRY)
-        # while self.waitOver(self, ) == False:
-        #     self.soundEffect(self, DOG_GROWL)
+        def alert_behave():
+            self.faceExpression(self, ANGRY)
+            self.stand()
+            wait(275)
+            for i in (0, 4):
+                self.faceExpression(self, ANGRY)
+                self.robot.straight(100)
+                self.robot.turn(30)
+                self.robot.turn(-30)
+                self.robot.turn(90)
 
-        ##事件
+            self.faceExpression(self, ANGRY)
+            wait(275)
+
+            # 聲音表情
+            # self.faceExpression(self, ANGRY)
+            # while self.waitOver(self, ) == False:
+            #     self.soundEffect(self, DOG_GROWL)
+            time.sleep(1)
+        t = threading.Thread(target=alert_behave)
+        t.start()
+
+        # 事件
         self.alert_tree()
-    
-   
-    #rage
+
+    # rage
+
     def rage(self):
         if self.did_behavior_change:
             print('rage')
-        ##聲音表情
+        self.robot.settings(150, 5, 30, 5)
+        # 聲音表情和動作
 
-        ##動作
-        # 把速度加上去
-        # self.robot.settings(
-        #     straight_speed, straight_acceleration, turn_rate, turn_acceleration)
-        # # self.soundEffect(self, SPEED_UP)
-        # self.robot.turn(360)
-        # self.robot.run_target(self)
-        # # self.soundEffect(self, SPEED_IDLE)
-        # self.robot.turn(360)
-        # # self.soundEffect(self, SPEED_DOWN)
+        def rage_behave():
+            self.soundEffect(self, SPEED_UP)
+            self.soundEffect(self, SPEED_IDLE)
+            self.soundEffect(self, SPEED_DOWN)
+            for i in (0, 3):
+                self.robot.straight(100)
+                wait(275)
+                self.robot.turn(120)
+                wait(275)
+            time.sleep(1)
+        t = threading.Thread(target=rage_behave)
+        t.start()
 
-        ##事件
+        # 事件
         self.rage_tree()
 
+    # happy
 
-
-    #happy
     def happy(self):
+        self.robot.stop()
         if self.did_behavior_change:
             print('happy')
 
-        ###聲音表情
+        def happy_behave():
+            self.robot.turn(360)
+            self.robot.straight(-50)
+            self.robot.turn(50)
+            time.sleep(1)
+        t = threading.Thread(target=happy_behave)
+        t.start()
+
+        # 聲音表情
         # self.soundEffect(self, DOG_BARK_1)
         # self.faceExpression(self, WINKING)
         # self.soundEffect(self, DOG_BARK_1)
@@ -488,39 +562,45 @@ class Puppy:
         # self.soundEffect(self, DOG_BARK_1)
         # self.faceExpression(self, CRAZY_2)
 
-        ###事件
+        # 事件
         self.happy_tree()
 
-    #follow
+    # follow
     def follow(self):
         if self.did_behavior_change:
             print('follow')
-        
-        ###聲音表情
 
-        ###動作
+        # 聲音表情
+
+        # 動作
         '''
         要用到電腦視覺
         '''
 
-        ###事件
+        # 事件
         self.follow_tree()
-        
-    #go to sleep
+
+    # go to sleep
     def go_to_sleep(self):
         if self.did_behavior_change:
             print('go_to_sleep')
 
-        ###聲音表情
-        self.eyes = self.TIRED_EYES
-        self.sit_down() #不是真的坐下
-        self.move_head(-20)
-        self.eyes = self.SLEEPING_EYES
-        self.ev3.speaker.play_file(SoundFile.SNORING)
-        ###事件
+        # 聲音表情
+        def sleep_behave():
+            self.sit()
+            self.eyes = self.TIRED_EYES
+            self.bow_head()
+            self.eyes = self.SLEEPING_EYES
+            self.ev3.speaker.play_file(SoundFile.SNORING)
+            time.sleep(1)
+        t = threading.Thread(target=sleep_behave)
+        t.start()
+
+        # 事件
         self.go_to_sleep_tree()
 
     '''unuse behavior that may be useful? in the future '''
+
     def wake_up(self):
         """Makes the puppy wake up."""
         if self.did_behavior_change:
@@ -577,7 +657,7 @@ class Puppy:
 
     '''
     定義
-    '''        
+    '''
     @property
     def behavior(self):
         """Gets and sets the current behavior."""
@@ -598,6 +678,7 @@ class Puppy:
             self._behavior_changed = False
             return True
         return False
+
     @property
     def eyes(self):
         """Gets and sets the eyes."""
@@ -609,16 +690,16 @@ class Puppy:
             self._eyes = value
             self.ev3.screen.load_image(value)
 
-
     '''God View 判斷一些全局的行為變化'''
-    #是否30s沒換行為
+    # 是否30s沒換行為
+
     def monitor_counts(self):
         if self.count_changed_timer.time() > 30000:
             # If nothing has happened for 30 seconds, go to sleep
             self.count_changed_timer.reset()
             self.behavior = self.idle()
 
-    #判斷等待的時間是否超過特定的秒數
+    # 判斷等待的時間是否超過特定的秒數
     def waitOver(self, value):
         n = StopWatch.time()
         value *= 1000
@@ -630,14 +711,19 @@ class Puppy:
         return True
 
     '''程式執行'''
+
     def run(self):
+
+        # self.raise_head()
+        # self.bow_head()
+
         self.reset()
         while True:
             # self.monitor_counts()
             self.behavior()
             wait(100)
 
+
 if __name__ == '__main__':
     puppy = Puppy()
     puppy.run()
-    
